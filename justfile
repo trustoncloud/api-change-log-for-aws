@@ -3,7 +3,7 @@ work_dir := "build"
 sdk_git_repo := "https://github.com/aws/aws-sdk-js.git"
 svg_icon_url := "https://d1.awsstatic.com/webteam/architecture-icons/AWS-Architecture-Icons_SVG_20191031.37913bbe8450d38bc7acc50cc40fe0c2135d650c.zip"
 svg_icon_prefix := "AWS-Architecture-Icons_SVG_20191031/SVG\\ Dark/"
-website_bucket := "awsapichanges.info"
+website_bucket := "awsapichanges.com"
 
 
 # Build a docker image

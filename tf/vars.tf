@@ -3,10 +3,6 @@ variable "app" {
   default = "apichanges"
 }
 
-variable "vpc" {
-  type = string
-}
-
 variable "resource_tags" {
   type = map
   default = {
@@ -15,10 +11,6 @@ variable "resource_tags" {
 }
 
 variable "domain" {
-  type = string
-}
-
-variable "access_log_bucket" {
   type = string
 }
 

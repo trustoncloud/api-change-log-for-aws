@@ -28,4 +28,3 @@ USER apichanges
 WORKDIR /home/apichanges
 ENV LC_ALL="C.UTF-8" LANG="C.UTF-8" TZ=":/etc/localtime"
 ENTRYPOINT ["/usr/local/bin/just"]
-
