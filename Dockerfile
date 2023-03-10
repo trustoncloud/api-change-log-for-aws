@@ -1,8 +1,8 @@
 from python:3.8.1-buster
 
 LABEL name="apichanges" \
-      homepage="https://github.com/awslabs/aws-sdk-api-changes" \
-      maintainer="Kapil Thangavelu <https://twitter.com/kapilvt>"
+    homepage="https://github.com/trustoncloud/api-change-log-for-aws" \
+    maintainer="TrustOnCloud <dev@trustoncloud.com>"
 
 RUN adduser --disabled-login apichanges
 COPY --chown=apichanges:apichanges . /home/apichanges
@@ -15,14 +15,14 @@ RUN apt-get -q update  \
     && apt-get -y -t buster-backports install libgit2-dev \
     && cd /home/apichanges \
     && pip3 install -r requirements.txt \
-    && python3 setup.py develop \
-    && curl -LSfs https://japaric.github.io/trust/install.sh | \
-	sh -s -- --git casey/just --target x86_64-unknown-linux-musl --to /usr/local/bin \
-    && apt-get --yes remove build-essential \
-    && apt-get purge --yes --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
-    && rm -Rf /var/cache/apt/ \
-    && rm -Rf /var/lib/apt/lists/* \
-    && rm -Rf /root/.cache/
+    && python3 setup.py develop
+
+RUN curl https://sh.rustup.rs -sSf > rustup.sh \
+    && chmod 755 rustup.sh \
+    && ./rustup.sh -y \
+    && rm rustup.sh \
+    && $HOME/.cargo/bin/cargo install just \
+    && ln -s $HOME/.cargo/bin/just /usr/local/bin/just
 
 USER apichanges
 WORKDIR /home/apichanges

@@ -6,23 +6,25 @@ from setuptools import setup, find_packages
 def read(fname):
     return open(
         os.path.join(os.path.dirname(__file__), fname),
-        encoding='utf-8').read()
+        encoding='utf-8'
+    ).read()
 
 
 setup(
     name="apichanges",
-    version='0.0.1',
+    version="0.0.1",
     description="AWS API Changes",
-    long_description=read('README.md'),
-    long_description_content_type='text/markdown',
+    long_description=read("README.md"),
+    long_description_content_type="text/markdown",
     license="Apache-2.0",
     packages=find_packages(),
     entry_points={
         'console_scripts': [
-            'apichanges = apichanges.cli:cli']},
+            'apichanges = apichanges.cli:cli'
+        ]
+    },
     install_requires=[
-
-        "botocore>=1.12.228",
+        "botocore>=1.29.70",
         "Click==7.0",
         "docutils==0.15.2",
         "Jinja2>=2.10.1",
