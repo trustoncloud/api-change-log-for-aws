@@ -229,11 +229,14 @@ class Site:
         if not self.assets_dir:
             return
         for atype in ("css", "js", "sprite", "icons"):
-            if incremental and atype == "icons":
-                continue
             shutil.copytree(
-                self.assets_dir / atype, self.output / atype, dirs_exist_ok=True
+                self.assets_dir / atype, self.output / atype,
+                dirs_exist_ok=True
             )
+        favicon = os.path.join(self.assets_dir, "icons", "favicon.ico")
+        if os.path.isfile(favicon):
+            shutil.copy(favicon, self.output)
+
 
     @classmethod
     def link(self, relative_path):
@@ -284,7 +287,7 @@ class Site:
         feed.author(
             {
                 "name": "AWSPIChanges",
-                "email": "https://github.com/awslabs/aws-sdk-api-changes",
+                "email": "https://github.com/trustoncloud/api-change-log-for-aws",
             }
         )
         feed.link(href=self.site_url, rel="alternate")

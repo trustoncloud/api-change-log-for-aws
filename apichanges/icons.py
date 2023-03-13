@@ -5,7 +5,7 @@ def get_icon(service_name):
 def get_icon_style(service_name):
     name = ICON_SERVICE_MAP.get(service_name)
     if not name:
-        return "sprite-images"
+        return "sprite-images-aws-cloud-alt"
     return "sprite-images-%s" % name.lower()
 
 
