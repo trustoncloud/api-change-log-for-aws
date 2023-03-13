@@ -26,5 +26,5 @@ RUN curl https://sh.rustup.rs -sSf > rustup.sh \
 
 USER apichanges
 WORKDIR /home/apichanges
-ENV LC_ALL="C.UTF-8" LANG="C.UTF-8" TZ=":/etc/localtime"
+ENV LC_ALL="C.UTF-8" LANG="C.UTF-8" TZ=":/etc/localtime" PATH="${PATH}:/home/apichanges/.local/bin"
 ENTRYPOINT ["/usr/local/bin/just"]
