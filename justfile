@@ -13,7 +13,7 @@ image:
 # Clone an aws sdk api repo for introspection.
 sdk-repo: cache-get
     #!/usr/bin/env python3
-    import os, json, subprocess, datetime, pathlib
+    import json, subprocess, datetime, pathlib
     work_dir = pathlib.Path('{{work_dir}}').resolve()
     data = json.load(open(str(work_dir/'cache.json')))
     last = datetime.datetime.fromtimestamp(data[1]['created'])
@@ -22,8 +22,12 @@ sdk-repo: cache-get
     print("run %s" % (' '.join(cmd)))
     subprocess.check_call(cmd)
 
+clone:
+    #!/bin/bash
+    git clone {{sdk_git_repo}} {{work_dir}}/sdk_repo
+
 # Build the website
-build:
+build: clone sprites
     #!/usr/bin/env python3
     import logging
     from apichanges.sitebuild import Site
@@ -32,10 +36,10 @@ build:
     builder_dir = Path('.').resolve()
     work_dir = Path('{{work_dir}}').resolve()
     site = Site(
-         work_dir / 'sdk_repo',
-         work_dir / 'cache.json',
-         builder_dir / 'templates',
-         builder_dir / 'assets')
+        work_dir / 'sdk_repo',
+        work_dir / 'cache.json',
+        builder_dir / 'templates',
+        builder_dir / 'assets')
     site.build(work_dir / 'stage')
 
 # Publish the website
@@ -77,7 +81,7 @@ cache-trim:
 
 # Build image sprites for aws service icons.
 sprites:	
-    pip3 -q install glue cairosvg
+    pip3 -q install glue cairosvg markupsafe==2.0.1
     curl -s -o aws-svg-icons.zip {{svg_icon_url}}
     unzip -qq -o aws-svg-icons.zip
     python3 tools/icon_build.py -s {{svg_icon_prefix}} -d assets/images --size 64

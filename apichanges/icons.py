@@ -3,8 +3,10 @@ def get_icon(service_name):
 
 
 def get_icon_style(service_name):
-    img = ICON_SERVICE_MAP.get(service_name).lower()
-    return "sprite-images-%s" % img
+    name = ICON_SERVICE_MAP.get(service_name)
+    if not name:
+        return "sprite-images"
+    return "sprite-images-%s" % name.lower()
 
 
 ICON_SERVICE_MAP = {

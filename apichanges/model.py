@@ -145,7 +145,9 @@ class DeltaVisitor(ShapeVisitor):
         return self.process(new.value, other.value)
 
     def visit_string(self, new, other):
-        return set(new.enum).difference(other.enum)
+        if hasattr(new, 'enum') and hasattr(other, 'enum'):
+            return set(new.enum).difference(other.enum)
+        return set()
 
     def visit_shape(self, new, other):
         return []
