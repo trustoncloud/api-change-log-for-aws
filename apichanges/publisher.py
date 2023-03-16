@@ -65,11 +65,15 @@ class SitePublisher(object):
                 ext = f.rsplit(".", 1)[-1]
                 tf = stage_dir / f
                 f = dirpath / f
+                osize = f.stat().st_size
+                # skip if the file is empty
+                if not osize:
+                    continue
+
                 tf.parent.mkdir(parents=True, exist_ok=True)
                 if ext in self.compress_exts:
                     with gzip.open(tf, "w") as fh:
                         fh.write(f.read_bytes())
-                    osize = f.stat().st_size
                     csize = tf.stat().st_size
                     log.debug(
                         "compressed %s -> %s -> %s (%0.0f%%)"
@@ -78,7 +82,7 @@ class SitePublisher(object):
                     tf_size += csize
                 else:
                     shutil.copy2(str(f), str(tf))
-                    tf_size += f.stat().st_size
+                    tf_size += osize
                 tf_count += 1
 
         log.info("prepared stage %d files %d size" % (tf_count, tf_size))

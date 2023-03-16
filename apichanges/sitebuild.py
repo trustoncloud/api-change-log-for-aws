@@ -358,7 +358,7 @@ class Site:
                         force=True,
                     )
                 except InvalidShapeReferenceError as exc:
-                    log.info("Ignoring exception:", exc_info=str(exc))
+                    log.info("Ignoring exception: %s", exc.__class__.__name__)
 
 
     def build_service_pages(self, commits: List[Commit], services=None):
