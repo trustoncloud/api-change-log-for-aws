@@ -10,8 +10,8 @@ resource "aws_ecs_task_definition" "app" {
   network_mode             = "awsvpc"
   execution_role_arn       = aws_iam_role.ecs_task_exec_role.arn
   task_role_arn            = aws_iam_role.app_role.arn
-  cpu                      = 512
-  memory                   = 1024
+  cpu                      = 2048
+  memory                   = 8192
   requires_compatibilities = ["FARGATE"]
   tags                     = var.resource_tags
 

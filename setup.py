@@ -24,7 +24,7 @@ setup(
         ]
     },
     install_requires=[
-        "botocore>=1.29.89",
+        "botocore==1.29.89",
         "Click==7.0",
         "docutils==0.15.2",
         "Jinja2>=2.10.1",

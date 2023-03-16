@@ -14,6 +14,7 @@ import arrow
 import jinja2
 import pygit2
 from botocore import hooks, xform_name
+from botocore.model import InvalidShapeReferenceError
 from botocore.docs.docstring import ClientMethodDocstring
 from dateutil.tz import tzutc
 from docutils.core import publish_parts
@@ -348,13 +349,17 @@ class Site:
     def build_commit_pages(self, commits: List[Commit]):
         for c in commits:
             for svc_change in c:
-                self.render_page(
-                    "archive/changes/{}-{}.html".format(c.id[:6], svc_change.name),
-                    "service-commit.j2",
-                    service_change=svc_change,
-                    commit=c,
-                    force=True,
-                )
+                try:
+                    self.render_page(
+                        "archive/changes/{}-{}.html".format(c.id[:6], svc_change.name),
+                        "service-commit.j2",
+                        service_change=svc_change,
+                        commit=c,
+                        force=True,
+                    )
+                except InvalidShapeReferenceError as exc:
+                    log.info("Ignoring exception:", exc_info=str(exc))
+
 
     def build_service_pages(self, commits: List[Commit], services=None):
         groups = group_by_service(commits)
