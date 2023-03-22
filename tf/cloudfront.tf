@@ -1,4 +1,3 @@
-
 resource "aws_cloudfront_distribution" "www_distribution" {
   // origin is where CloudFront gets its content from.
   origin {

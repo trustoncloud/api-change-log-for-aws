@@ -1,4 +1,3 @@
-
 data "aws_route53_zone" "zone" {
   name = var.domain
 }
@@ -15,5 +14,3 @@ resource "aws_route53_record" "bucket" {
     evaluate_target_health = false
   }
 }
-
-

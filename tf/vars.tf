@@ -4,7 +4,7 @@ variable "app" {
 }
 
 variable "resource_tags" {
-  type = map
+  type = map(any)
   default = {
     "App" = "AWSAPIChanges"
   }
