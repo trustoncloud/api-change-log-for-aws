@@ -26,7 +26,7 @@ resource "aws_cloudwatch_event_target" "scheduled_build" {
     network_configuration {
       assign_public_ip = true
       security_groups  = [aws_security_group.nsg_task.id]
-      subnets          = split(",", var.subnets)
+      subnets          = [for subnet in data.aws_subnet.default : subnet.id]
     }
   }
 }

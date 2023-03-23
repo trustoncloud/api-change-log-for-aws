@@ -14,6 +14,6 @@ variable "domain" {
   type = string
 }
 
-variable "subnets" {
+variable "vpc_id" {
   type = string
 }
