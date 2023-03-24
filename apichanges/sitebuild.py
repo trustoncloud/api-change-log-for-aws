@@ -181,7 +181,7 @@ class TemplateAPI:
 class Site:
 
     site_prefix = ""
-    site_url = ""
+    site_url = "https://awsapichanges.com"
     default_commit_days = 14
 
     def __init__(self, repo_path, cache_path, template_dir, assets_dir):
