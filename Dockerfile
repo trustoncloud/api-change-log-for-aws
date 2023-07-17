@@ -1,4 +1,4 @@
-from python:3.8.1-buster
+FROM python:3.8-buster
 
 LABEL name="apichanges" \
     homepage="https://github.com/trustoncloud/api-change-log-for-aws" \
@@ -17,14 +17,15 @@ RUN apt-get -q update  \
     && pip3 install -r requirements.txt \
     && python3 setup.py develop
 
+USER apichanges
+WORKDIR /home/apichanges
 RUN curl https://sh.rustup.rs -sSf > rustup.sh \
     && chmod 755 rustup.sh \
     && ./rustup.sh -y \
     && rm rustup.sh \
     && $HOME/.cargo/bin/cargo install just \
-    && ln -s $HOME/.cargo/bin/just /usr/local/bin/just
+    && mkdir -p /home/apichanges/.local/bin/ \
+    && ln -s $HOME/.cargo/bin/just /home/apichanges/.local/bin/just
 
-USER apichanges
-WORKDIR /home/apichanges
 ENV LC_ALL="C.UTF-8" LANG="C.UTF-8" TZ=":/etc/localtime" PATH="${PATH}:/home/apichanges/.local/bin"
-ENTRYPOINT ["/usr/local/bin/just"]
+ENTRYPOINT ["/home/apichanges/.local/bin/just"]
