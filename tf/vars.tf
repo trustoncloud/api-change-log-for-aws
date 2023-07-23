@@ -17,3 +17,8 @@ variable "domain" {
 variable "vpc_id" {
   type = string
 }
+
+variable "slack_webhook" {
+  type      = map(string)
+  sensitive = true
+}
