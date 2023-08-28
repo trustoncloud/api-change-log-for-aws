@@ -423,8 +423,8 @@ class Site:
         self.commits = commits
         if not commits:
             new_commits = self._load(repo_path, since=since)
-            if since is None:  # last commit is typically an import
-                new_commits.pop(-1)
+            # if since is None:  # last commit is typically an import
+            #     new_commits.pop(-1)
         else:
             new_commits = self._load(repo_path, since=commits[0].tag)
         self.commits.extend(new_commits)
