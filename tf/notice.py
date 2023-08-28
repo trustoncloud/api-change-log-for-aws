@@ -32,45 +32,52 @@ def handler(event, _):
                 f"Could not find {secret_name} in environment."
             )
 
-    source_message = json.loads(event["Records"][0]["Sns"]["Message"])
-    slack_message = {
-        "text": source_message["NewStateReason"],
-        "attachments": [{
-            "color": "danger",
-            "fields": [{
-                "title": "Lambda Function",
-                "value": source_message["Trigger"]["Dimensions"][0]["value"],
-                "short": True
-            }, {
-                "title": "Timestamp",
-                "value": source_message["StateChangeTime"],
-                "short": True
-            }, {
-                "title": "Alarm",
-                "value": source_message["AlarmName"],
-                "short": True
-            }, {
-                "title": "Region",
-                "value": source_message["Region"],
-                "short": True
-            }, {
-                "title": "AWS Account",
-                "value": source_message["AWSAccountId"],
-                "short": True
+    message = json.loads(event["Records"][0]["Sns"]["Message"])
+    container = message["detail"]["containers"][0]
+    if container["exitCode"] == 0:
+        return {
+            "statusCode": 200,
+            "body": json.dumps({"status": "ok"})
+        }
+    else:
+        slack_message = {
+            "text": message["detail"]["stoppedReason"],
+            "attachments": [{
+                "color": "danger",
+                "fields": [{
+                    "title": "ECS Task",
+                    "value": container["name"],
+                    "short": True
+                }, {
+                    "title": "Timestamp",
+                    "value": message["time"],
+                    "short": True
+                }, {
+                    "title": "Exit Code",
+                    "value": container["exitCode"],
+                    "short": True
+                }, {
+                    "title": "Region",
+                    "value": message["region"],
+                    "short": True
+                }, {
+                    "title": "AWS Account",
+                    "value": message["account"],
+                    "short": True
+                }]
             }]
-        }]
-    }
+        }
 
-    response: HTTPResponse = urlopen(
-        Request(
-            os.environ["SLACK_WEBHOOK_URL"],
-            data=json.dumps(slack_message).encode("utf8"),
-            headers={"Content-Type": "application/json"}
+        response: HTTPResponse = urlopen(
+            Request(
+                os.environ["SLACK_WEBHOOK_URL"],
+                data=json.dumps(slack_message).encode("utf8"),
+                headers={"Content-Type": "application/json"}
+            )
         )
-    )
 
-    return {
-        "statusCode": response.status,
-        "isBase64Encoded": False,
-        "body": json.dumps(response.read().decode("utf8"))
-    }
+        return {
+            "statusCode": response.status,
+            "isBase64Encoded": False,
+            "body": json.dumps(response.read().decode("utf8"))
+        }
