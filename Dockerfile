@@ -1,4 +1,4 @@
-FROM python:3.8-buster
+FROM python:3.8-bookworm
 
 LABEL name="apichanges" \
     homepage="https://github.com/trustoncloud/api-change-log-for-aws" \
@@ -6,13 +6,11 @@ LABEL name="apichanges" \
 
 RUN adduser --disabled-login apichanges
 COPY --chown=apichanges:apichanges . /home/apichanges
-RUN echo "deb http://deb.debian.org/debian buster-backports main" >> /etc/apt/sources.list
 
 RUN apt-get -q update  \
     && apt-get -q -y install \
-	libxml2-dev libxslt1-dev libcairo2-dev build-essential libffi-dev \
-	git curl unzip zstd \
-    && apt-get -y -t buster-backports install libgit2-dev \
+        libxml2-dev libxslt1-dev libcairo2-dev build-essential libffi-dev \
+        git curl unzip zstd libgit2-dev \
     && cd /home/apichanges \
     && pip3 install -r requirements.txt \
     && python3 setup.py develop

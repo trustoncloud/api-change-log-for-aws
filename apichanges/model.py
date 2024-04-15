@@ -75,9 +75,12 @@ class EqualityVisitor(ShapeVisitor):
         return repr(shape) == repr(other)
 
     def visit_map(self, shape, other):
-        return self.process(shape.key, other.key) and self.process(
-            shape.value, other.value
-        )
+        try:
+            return self.process(shape.key, other.key) and self.process(
+                shape.value, other.value
+            )
+        except AttributeError:
+            return False
 
 
 class ReferenceVisitor(ShapeVisitor):
@@ -142,7 +145,10 @@ class DeltaVisitor(ShapeVisitor):
         return self.process(new.member, other.member)
 
     def visit_map(self, new, other):
-        return self.process(new.value, other.value)
+        try:
+            return self.process(new.value, other.value)
+        except AttributeError:
+            return {}
 
     def visit_string(self, new, other):
         if hasattr(new, 'enum') and hasattr(other, 'enum'):

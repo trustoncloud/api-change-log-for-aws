@@ -31,7 +31,7 @@ setup(
         "jmespath==0.9.4",
         "MarkupSafe>=2.1.2",
         "pycparser==2.19",
-        "pygit2==0.28.2",
+        "pygit2==1.12.2",
         "python-dateutil==2.8.0",
         "six==1.13.0",
         "lxml==4.9.1",
