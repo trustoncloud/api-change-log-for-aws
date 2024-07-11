@@ -66,7 +66,10 @@ class EqualityVisitor(ShapeVisitor):
         return True
 
     def visit_list(self, shape, other):
-        return self.process(shape.member, other.member)
+        try:
+            return self.process(shape.member, other.member)
+        except AttributeError:
+            return False
 
     def visit_string(self, shape, other):
         return shape.enum == other.enum
