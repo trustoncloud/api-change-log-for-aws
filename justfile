@@ -15,19 +15,18 @@ sdk-repo: cache-get
     #!/usr/bin/env python3
     import json, subprocess, datetime, pathlib
     work_dir = pathlib.Path('{{work_dir}}').resolve()
-    data = json.load(open(str(work_dir/'cache.json')))
-    last = datetime.datetime.fromtimestamp(data[1]['created'])
-    cmd = ['git', 'clone', '--shallow-since=%s' % last.isoformat(),
-        '{{sdk_git_repo}}', str(work_dir/'sdk_repo')]
+    try:
+        data = json.load(open(str(work_dir/'cache.json')))
+        last = datetime.datetime.fromtimestamp(data[1]['created'])
+        cmd = ['git', 'clone', '--shallow-since=%s' % last.isoformat(),
+            '{{sdk_git_repo}}', str(work_dir/'sdk_repo')]
+    except (FileNotFoundError, IndexError):
+        cmd = ['git', 'clone', '{{sdk_git_repo}}', str(work_dir/'sdk_repo')]
     print("run %s" % (' '.join(cmd)))
     subprocess.check_call(cmd)
 
-clone:
-    #!/bin/bash
-    git clone {{sdk_git_repo}} {{work_dir}}/sdk_repo
-
 # Build the website
-build: clone sprites
+build: sdk-repo sprites
     #!/usr/bin/env python3
     import logging
     from apichanges.sitebuild import Site
@@ -58,6 +57,7 @@ publish: build
 cache-get:
     #!/bin/bash
     set -ex
+    mkdir -p {{work_dir}}
     cd {{work_dir}}
     aws s3 cp s3://{{website_bucket}}/cache.json.zst .
     zstd -f -d cache.json.zst

@@ -1,7 +1,8 @@
-from datetime import datetime
 from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Dict, List
+
 from dataclasses_json import dataclass_json
-from typing import List, Dict, Any
 
 
 @dataclass_json

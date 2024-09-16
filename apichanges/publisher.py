@@ -22,7 +22,6 @@ def temp_dir():
 
 
 class SitePublisher(object):
-
     compress_exts = set(("js", "css", "json", "html"))
 
     def __init__(self, site_dir: Path, s3_bucket, s3_prefix=""):

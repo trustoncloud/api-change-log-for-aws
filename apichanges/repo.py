@@ -70,7 +70,7 @@ class CommitProcessor(object):
                     stats=change_diff.stats.format(
                         pygit2.GIT_DIFF_STATS_SHORT, 80
                     ).strip(),
-                    **commit
+                    **commit,
                 )
             )
         service_changes = []
@@ -135,8 +135,7 @@ class CommitProcessor(object):
 
 
 class TagWalker(object):
-    """Iter commits and diffs on a git repo.
-    """
+    """Iter commits and diffs on a git repo."""
 
     # twin peaks styled, not texas ranger
     def __init__(self, repo):
@@ -159,8 +158,10 @@ class TagWalker(object):
             log.debug("walker exit start == end")
             return
 
+        # iterate through all the commits between `start` + 1 till the `end` inclusively.
+        # `start` commit should've been processed already during previous execution.
         for idx, t in enumerate(
-            tags[tags.index(start) : tags.index(end) + 1], tags.index(start)
+            tags[tags.index(start) + 1 : tags.index(end) + 1], tags.index(start) + 1
         ):
             previous = self.get_tag_commit(tags[idx - 1])
             cur = self.get_tag_commit(tags[idx])
@@ -195,9 +196,11 @@ class TagWalker(object):
             return tags[-1]
         elif target is None:
             return tags[0]
-        # bisect on version
+
+        # when version is given, bisect right if `end=True`; otherwise, bisect left.
+        # this ensures that commits start from the last entry of cache, if there is any.
         if not isinstance(target, datetime):
-            indexer = end and bisect.bisect_left or bisect.bisect_right
+            indexer = end and bisect.bisect_right or bisect.bisect_left
             idx = indexer(tags, LooseVersion("refs/tags/%s" % target))
             if idx == len(tags):
                 return tags[-1]

@@ -50,7 +50,6 @@ class ShapeVisitor(object):
 
 
 class EqualityVisitor(ShapeVisitor):
-
     DEFAULT_VALUE = True
 
     def visit_structure(self, shape, other):
@@ -154,7 +153,7 @@ class DeltaVisitor(ShapeVisitor):
             return {}
 
     def visit_string(self, new, other):
-        if hasattr(new, 'enum') and hasattr(other, 'enum'):
+        if hasattr(new, "enum") and hasattr(other, "enum"):
             return set(new.enum).difference(other.enum)
         return set()
 
@@ -196,7 +195,6 @@ class Shape(ComparableShape, model.Shape):
 
 
 class ShapeResolver(model.ShapeResolver):
-
     # Any type not in this mapping will default to the Shape class.
     SHAPE_CLASSES = {
         "structure": StructureShape,
@@ -428,7 +426,6 @@ class Change(object):
 
 
 class NewMethod(Change):
-
     type = "new"
 
     def __init__(self, service, op):
@@ -440,7 +437,6 @@ class NewMethod(Change):
 
 
 class UpdatedMethod(Change):
-
     type = "updated"
 
     def __init__(self, service, op, delta):

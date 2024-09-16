@@ -9,6 +9,7 @@ on:
     - 'tools/**'
     - 'justfile'
     - 'Dockerfile'
+    - 'requirements.txt'
     - '.github/workflows/ecr.yaml'
 
 # AWS OIDC 
@@ -26,10 +27,10 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
+      uses: aws-actions/configure-aws-credentials@v4
       with:
         role-to-assume: arn:aws:iam::347516098724:role/github-actions-role
         role-session-name: github-action-session
@@ -37,7 +38,7 @@ jobs:
 
     - name: Login to ECR
       id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
+      uses: aws-actions/amazon-ecr-login@v2
 
     - name: Build, tag and push to ECR
       env:

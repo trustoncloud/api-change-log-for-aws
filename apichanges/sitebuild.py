@@ -14,8 +14,8 @@ import arrow
 import jinja2
 import pygit2
 from botocore import hooks, xform_name
-from botocore.model import InvalidShapeReferenceError
 from botocore.docs.docstring import ClientMethodDocstring
+from botocore.model import InvalidShapeReferenceError
 from dateutil.tz import tzutc
 from docutils.core import publish_parts
 from docutils.writers.html5_polyglot import HTMLTranslator, Writer
@@ -59,7 +59,6 @@ def bisect_month(commits: List[Commit], month: datetime) -> int:
 def group_by_date(
     commits: List[Commit], year: bool = False, month: bool = False
 ) -> List[Commit]:
-
     if year:
         key_func = lambda c: c.created.year  # noqa
     elif month:
@@ -179,7 +178,6 @@ class TemplateAPI:
 
 
 class Site:
-
     site_prefix = ""
     site_url = "https://awsapichanges.com"
     default_commit_days = 14
@@ -231,13 +229,11 @@ class Site:
             return
         for atype in ("css", "js", "sprite", "icons"):
             shutil.copytree(
-                self.assets_dir / atype, self.output / atype,
-                dirs_exist_ok=True
+                self.assets_dir / atype, self.output / atype, dirs_exist_ok=True
             )
         favicon = os.path.join(self.assets_dir, "icons", "favicon.ico")
         if os.path.isfile(favicon):
             shutil.copy(favicon, self.output)
-
 
     @classmethod
     def link(self, relative_path):
@@ -359,7 +355,6 @@ class Site:
                     )
                 except InvalidShapeReferenceError as exc:
                     log.info("Ignoring exception: %s", exc.__class__.__name__)
-
 
     def build_service_pages(self, commits: List[Commit], services=None):
         groups = group_by_service(commits)
