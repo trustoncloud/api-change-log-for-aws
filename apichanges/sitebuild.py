@@ -436,8 +436,8 @@ class Site:
         delta = CommitProcessor(
             repo,
             change_dir=".changes",
-            model_prefix="apis/",
-            model_suffix="normal.json",
+            model_prefix="botocore/data/",
+            model_suffix="service-2.json",
         )
         releases = []
         for _, _, commit_info, change_diff in walker.walk(since, until):
