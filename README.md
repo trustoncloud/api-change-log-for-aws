@@ -20,7 +20,7 @@ Types of changes detected.
 
 Semantic Changelogs
 
- - we use the nodejs sdk repo which produce nice machine
+ - It uses the botocore SDK repo which produces nice machine
    readable diffs with the service team logs.
 
 This uses https://github.com/casey/just as a replacement for make.
