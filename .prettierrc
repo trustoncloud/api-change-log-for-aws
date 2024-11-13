@@ -1,0 +1,6 @@
+# used by prettier plugin of VSCode.
+singleQuote: false
+trailingComma: "all"
+printWidth: 100
+tabWidth: 2
+files: ["*.css", "*.js"]

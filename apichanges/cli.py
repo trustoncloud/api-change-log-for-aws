@@ -23,9 +23,7 @@ def _repo_stream_options(func):
         click.option("--path", required=True, help="Path to AWS SDK git clone"),
         click.option("--since", required=True, help="Start Date or Tag"),
         click.option("--until", help="End Date or Tag, default: last commit date"),
-        click.option(
-            "--service", multiple=True, help="Filter changes to only these services"
-        ),
+        click.option("--service", multiple=True, help="Filter changes to only these services"),
         click.option(
             "--changes-dir",
             default=".changes",
@@ -77,7 +75,7 @@ def build_page(
 
     log.info("scanning for api changes since %s until %s", since, until or "latest")
 
-    for prev, cur, commit_info, change_diff in walker.walk(since, until):
+    for _prev, _cur, commit_info, change_diff in walker.walk(since, until):
         count += 1
         service_changes = delta_processor.process(commit_info, change_diff)
         if service_changes:

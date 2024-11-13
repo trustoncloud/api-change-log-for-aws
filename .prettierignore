@@ -1,0 +1,3 @@
+# ignore minimized files.
+**/*.min.css
+**/*.min.js

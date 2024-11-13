@@ -54,7 +54,7 @@ class EqualityVisitor(ShapeVisitor):
 
     def visit_structure(self, shape, other):
         # type change to struct
-        if type(shape) != type(other):
+        if type(shape) is not type(other):
             return True
         added = set(shape.members).difference(other.members)
         if added:
@@ -68,7 +68,7 @@ class EqualityVisitor(ShapeVisitor):
         try:
             return self.process(shape.member, other.member)
         except AttributeError:
-            return False
+            return []
 
     def visit_string(self, shape, other):
         return shape.enum == other.enum
@@ -78,11 +78,9 @@ class EqualityVisitor(ShapeVisitor):
 
     def visit_map(self, shape, other):
         try:
-            return self.process(shape.key, other.key) and self.process(
-                shape.value, other.value
-            )
+            return self.process(shape.key, other.key) and self.process(shape.value, other.value)
         except AttributeError:
-            return False
+            return {}
 
 
 class ReferenceVisitor(ShapeVisitor):
@@ -96,9 +94,7 @@ class ReferenceVisitor(ShapeVisitor):
         return self.process(shape.member, shape_name)
 
     def visit_map(self, shape, shape_name):
-        return self.process(shape.key, shape_name) or self.process(
-            shape.value, shape_name
-        )
+        return self.process(shape.key, shape_name) or self.process(shape.value, shape_name)
 
     def visit_string(self, shape, shape_name):
         return False
@@ -131,20 +127,26 @@ class TypeRepr(ShapeVisitor):
 
 class DeltaVisitor(ShapeVisitor):
     def visit_structure(self, new, other):
-        if type(new) != type(other):
+        if type(new) is not type(other):
             return TypeRepr().process(new)
-        added = set(new.members).difference(other.members)
-        modified = {a: TypeRepr().process(new.members[a]) for a in added}
-        for m in new.members:
-            if m in added:
-                continue
-            md = self.process(new.members[m], other.members[m])
-            if md:
-                modified[m] = md
-        return modified
+        try:
+            added = set(new.members).difference(other.members)
+            modified = {a: TypeRepr().process(new.members[a]) for a in added}
+            for m in new.members:
+                if m in added:
+                    continue
+                md = self.process(new.members[m], other.members[m])
+                if md:
+                    modified[m] = md
+            return modified
+        except AttributeError:
+            return {}
 
     def visit_list(self, new, other):
-        return self.process(new.member, other.member)
+        try:
+            return self.process(new.member, other.member)
+        except AttributeError:
+            return []
 
     def visit_map(self, new, other):
         try:
@@ -210,13 +212,13 @@ class ShapeResolver(model.ShapeResolver):
         try:
             shape_model = self._shape_map[shape_name]
         except KeyError:
-            raise model.NoShapeFoundError(shape_name)
+            raise model.NoShapeFoundError(shape_name) from KeyError
         try:
             shape_cls = self.SHAPE_CLASSES.get(shape_model["type"], self.DEFAULT_SHAPE)
         except KeyError:
             raise model.InvalidShapeError(
                 "Shape is missing required key 'type': %s" % shape_model
-            )
+            ) from KeyError
         if member_traits:
             shape_model = shape_model.copy()
             shape_model.update(member_traits)
@@ -266,11 +268,7 @@ def diff_model(new, old=None):
             op_delta["response"] = mshape_map[op_shape.output_shape.name]
 
         # sigh ec2 service specific hack
-        if (
-            new.service_name == "ec2"
-            and "request" in op_delta
-            and "TagSpecifications" in d_i
-        ):
+        if new.service_name == "ec2" and "request" in op_delta and "TagSpecifications" in d_i:
             d_i.pop("TagSpecifications")
             if not d_i:
                 op_delta.pop("request")
@@ -370,11 +368,7 @@ class ServiceChange(object):
             # sso oidc
             self.service.metadata.get("serviceAbbreviation", "").replace(" ", "-"),
             "-".join(
-                [
-                    c
-                    for c in self.service.metadata.get("uid", "").split("-")
-                    if not c.isdigit()
-                ]
+                [c for c in self.service.metadata.get("uid", "").split("-") if not c.isdigit()]
             ),
             self.service.metadata.get("endpointPrefix", "").replace("-", ""),
             self.service.metadata.get("serviceId", "").replace(" ", ""),
@@ -391,9 +385,7 @@ class ServiceChange(object):
             if logs:
                 break
         if not logs:
-            log.warning(
-                "%s no change log entry found: %s", self.name, list(change_log.keys())
-            )
+            log.warning("%s no change log entry found: %s", self.name, list(change_log.keys()))
         self.logs = logs
 
 

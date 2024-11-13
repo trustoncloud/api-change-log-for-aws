@@ -1,0 +1,41 @@
+{% extends "template.jinja2" %}
+{% from "macros.jinja2" import render_service_summary %}
+{% block navigation %}
+  <nav class="breadcrumb is-left" aria-label="breadcrumbs">
+    <ul>
+      <li>
+        <a href="/">API Changes</a>
+      </li>
+      <li>
+        <a href="/archive/service">Services</a>
+      </li>
+      <li class="is-active">
+        <a href="#" aria-current="page">{{ service_title }}</a>
+      </li>
+    </ul>
+  </nav>
+{% endblock navigation %}
+{% block topmast %}
+  <section class="section">
+    <div class="container">
+      <h1 class="title has-text-centered">
+        <span class="is-inline-block {{ api.get_icon_style(service, 48) }}">&nbsp;</span> &nbsp; {{ service_title }}
+      </h1>
+    </div>
+  </section>
+{% endblock topmast %}
+{% block content %}
+  <section class="section">
+    <div class="tile is-ancestor">
+      <div class="tile is-12 is-vertical is-parent">
+        {% for release in releases %}
+          {% for svc_change in release.select(service) %}
+            <div class="tile is-child box">
+              {{ render_service_summary(release, svc_change, include_name=False) }}
+            </div>
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+{% endblock content %}

@@ -1,8 +1,7 @@
 
 work_dir := "build"
 sdk_git_repo := "https://github.com/boto/botocore.git"
-svg_icon_url := "https://d1.awsstatic.com/webteam/architecture-icons/AWS-Architecture-Icons_SVG_20191031.37913bbe8450d38bc7acc50cc40fe0c2135d650c.zip"
-svg_icon_prefix := "AWS-Architecture-Icons_SVG_20191031/SVG\\ Dark/"
+icon_pack_url := "https://d1.awsstatic.com/webteam/architecture-icons/q1-2022/Asset-Package_01312022.735e45eb7f0891333b7fcce325b0af915fd44766.zip"
 website_bucket := "awsapichanges.com"
 
 
@@ -14,7 +13,7 @@ image:
 sdk-repo: cache-get
     #!/usr/bin/env python3
     import json, subprocess, datetime, pathlib
-    work_dir = pathlib.Path('{{work_dir}}').resolve()
+    work_dir = pathlib.Path('{{ work_dir }}').resolve()
     repo_dir = work_dir/'sdk_repo'
     try:
         data = json.load(open(str(work_dir/'cache.json')))
@@ -28,25 +27,26 @@ sdk-repo: cache-get
             str(repo_dir)
         ]
     except (FileNotFoundError, IndexError):
-        cmd = ['git', 'clone', '--branch=master', '{{sdk_git_repo}}', str(repo_dir)]
+        cmd = ['git', 'clone', '--branch=master', '{{ sdk_git_repo }}', str(repo_dir)]
     print("run %s" % (' '.join(cmd)))
     subprocess.check_call(cmd)
 
 # Build the website
-build: sdk-repo sprites
+build: sdk-repo icons
     #!/usr/bin/env python3
     import logging
     from apichanges.sitebuild import Site
     from pathlib import Path
     logging.basicConfig(level=logging.INFO)
     builder_dir = Path('.').resolve()
-    work_dir = Path('{{work_dir}}').resolve()
+    work_dir = Path('{{ work_dir }}').resolve()
     site = Site(
         work_dir / 'sdk_repo',
         work_dir / 'cache.json',
         builder_dir / 'templates',
-        builder_dir / 'assets')
-    site.build(work_dir / 'stage')
+        builder_dir / 'assets',
+        work_dir / 'stage'
+    )
 
 # Publish the website
 publish: build
@@ -55,28 +55,28 @@ publish: build
     from pathlib import Path
     from apichanges.publisher import SitePublisher
     logging.basicConfig(level=logging.INFO)
-    stage_dir = Path('{{work_dir}}').resolve() / 'stage'
-    publisher = SitePublisher(stage_dir, '{{website_bucket}}')
+    stage_dir = Path('{{ work_dir }}').resolve() / 'stage'
+    publisher = SitePublisher(stage_dir, '{{ website_bucket }}')
     publisher.publish()
 
 
 # Get the commit cache file
 cache-get:
-    #!/bin/bash
-    mkdir -p {{work_dir}}
-    cd {{work_dir}}
-    aws s3 cp s3://{{website_bucket}}/cache.json.zst .
+    #!/bin/sh
+    mkdir -p {{ work_dir }}
+    cd {{ work_dir }}
+    aws s3 cp s3://{{ website_bucket }}/cache.json.zst .
     if [ -f cache.json.zst ]; then
         zstd -f -d cache.json.zst
     fi
 
 # Upload the commit cache file
 cache-upload:
-    #!/bin/bash
+    #!/bin/sh
     set -ex
-    cd {{work_dir}}
+    cd {{ work_dir }}
     zstd -f -19 cache.json
-    aws s3 cp cache.json.zst s3://{{website_bucket}}/cache.json.zst
+    aws s3 cp cache.json.zst s3://{{ website_bucket }}/cache.json.zst
 
 # manual dev - trim cache file to simulate incremental
 cache-trim:
@@ -87,10 +87,8 @@ cache-trim:
     with open('cache.json', 'w') as fh:
         json.dump(data, fp=fh)
 
-# Build image sprites for aws service icons.
-sprites:	
-    pip3 -q install glue cairosvg markupsafe==2.0.1
-    curl -s -o aws-svg-icons.zip {{svg_icon_url}}
-    unzip -qq -o aws-svg-icons.zip
-    python3 tools/icon_build.py -s {{svg_icon_prefix}} -d assets/images --size 64
-    glue -q -s assets/images -o assets/sprite
+# Place icons and build CSS for aws service icons.
+icons:
+    #!/usr/bin/env python3
+    from apichanges.icons import IconBuilder
+    IconBuilder('{{ icon_pack_url }}')

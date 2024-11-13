@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, Generator, List
 
 from dataclasses_json import dataclass_json
 
@@ -63,7 +63,7 @@ class Commit:
     created: datetime
     service_changes: List[ServiceChange]
 
-    def select(self, service_name: str) -> List[ServiceChange]:
+    def select(self, service_name: str) -> Generator[ServiceChange, None, None]:
         for s in self:
             if s.name == service_name:
                 yield s

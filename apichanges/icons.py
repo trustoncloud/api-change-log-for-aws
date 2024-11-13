@@ -1,225 +1,404 @@
-def get_icon(service_name):
-    return "/icons/%s.png" % (ICON_SERVICE_MAP.get(service_name).lower())
+import logging
+import os
+import tempfile
+import urllib.request
+import zipfile
+from shutil import copy
 
+from jinja2 import Template
 
-def get_icon_style(service_name):
-    name = ICON_SERVICE_MAP.get(service_name)
-    if not name:
-        return "sprite-images-aws-cloud-alt"
-    return "sprite-images-%s" % name.lower()
+from .exceptions import DirectoryNotFoundError
+
+logging.basicConfig(format="%(message)s")
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 
 ICON_SERVICE_MAP = {
-    "aws": "AWS-Cloud-alt",
-    "a2i-runtime.sagemaker": "Amazon-SageMaker",
+    "toc": "ToC",
+    "toc-cloud": "ToC-Cloud",
+    "rss-feed": "RSS-Feed",
+    "mailing-list": "Mailing-List",
+    "aws": "AWS",
     "a4b": "Alexa-For-Business",
-    "access-analyzer": "AWS-Identity-and-Access-Management_IAM",
-    "acm": "AWS-Certificate-Manager",
-    "acm-pca": "AWS-Certificate-Authority",
-    "amplify": "AWS-Amplify",
-    "api.detective": "Security-Identity-and-Compliance",
-    "api.ecr": "Amazon-EC2-Container-Registry",
-    "api.elastic-inference": "Amazon-Elastic-Inference",
-    "api.mediatailor": "AWS-Elemental-MediaTailor",
-    "api.pricing": "AWS-Cost-Explorer",
-    "api.sagemaker": "Amazon-SageMaker",
-    "api.tunneling.iot": "IoT_Generic",
-    "apigateway": "Amazon-API-Gateway",
-    "appconfig": "AWS-Systems-Manager",
-    "application-autoscaling": "Amazon-Application-Auto-Scaling",
-    "applicationinsights": "Amazon-CloudWatch",
-    "appmesh": "AWS-App-Mesh",
-    "appstream2": "Amazon-Appstream-2_0",
-    "appsync": "AWS-AppSync",
-    "athena": "Amazon-Athena",
-    "autoscaling": "Amazon-EC2_Auto-Scaling",
-    "backup": "AWS-Backup",
-    "batch": "AWS-Batch",
-    "budgets": "AWS-Budgets",
-    "catalog.marketplace": "AWS-Marketplace",
-    "ce": "AWS-Cost-Explorer",
-    "chime": "Amazon-Chime",
-    "cloud9": "AWS-Cloud9",
-    "clouddirectory": "Amazon-Cloud-Directory",
-    "cloudformation": "AWS-CloudFormation",
-    "cloudfront": "Amazon-CloudFront",
-    "cloudhsm": "AWS-CloudHSM",
-    "cloudhsmv2": "AWS-CloudHSM",
-    "cloudsearch": "Amazon-CloudSearch",
-    "cloudsearchdomain": "Amazon-CloudSearch",
-    "cloudtrail": "AWS-CloudTrail",
-    "codebuild": "AWS-CodeBuild",
-    "codecommit": "AWS-CodeCommit",
-    "codedeploy": "AWS-CodeDeploy",
-    "codeguru-profiler": "Developer-Tools",
-    "codeguru-reviewer": "Developer-Tools",
-    "codepipeline": "AWS-CodePipeline",
-    "codestar": "AWS-CodeStar",
-    "codestar-connections": "AWS-CodeStar",
-    "codestar-notifications": "AWS-CodeStar",
-    "cognito-identity": "Amazon-Cognito",
-    "cognito-idp": "Amazon-Cognito",
-    "cognito-sync": "Amazon-Cognito",
-    "comprehend": "Amazon-Comprehend",
-    "comprehendmedical": "Amazon-Comprehend",
-    "compute-optimizer": "Reserved-Instance-Reporting",
-    "config": "AWS-Config",
-    "connect": "Amazon-Connect",
-    "cur": "AWS-Cost-and-Usage-Report",
-    "data.iot": "Internet-of-Things",
-    "data.iotevents": "AWS-IoT-Events",
-    "data.jobs.iot": "Internet-of-Things",
-    "data.mediastore": "AWS-Elemental-MediaStore",
-    "dataexchange": "Amazon-Simple-Storage-Service-S3_Bucket-with-Objects",
-    "datapipeline": "AWS-Data-Pipeline",
-    "datasync": "AWS-DataSync",
-    "dax": "Amazon-DynamoDB_DAX",
-    "devicefarm": "AWS-Device-Farm",
-    "devices.iot1click": "AWS-IoT-1-Click",
-    "directconnect": "AWS-Direct-Connect",
-    "discovery": "AWS-Migration-Hub",
-    "dlm": "AWS-Backup",
-    "dms": "AWS-Database-Migration-Service",
-    "ds": "AWS-Directory-Service",
-    "dynamodb": "Amazon-DynamoDB",
-    "ebs": "Amazon-Elastic-Block-Store-EBS",
-    "ec2": "Amazon-EC2",
-    "ec2-instance-connect": "Amazon-EC2",
-    "ecr": "Amazon-EC2-Container-Registry",
-    "ecs": "Amazon-Elastic-Container-Service",
-    "eks": "Amazon-Elastic-Kubernetes-Service",
-    "elasticache": "Amazon-ElastiCache",
-    "elasticbeanstalk": "AWS-Elastic-Beanstalk",
-    "elasticfilesystem": "Amazon-Elastic-File-System_EFS",
+    "access-analyzer": "Identity-and-Access-Management",
+    "acm": "Certificate-Manager",
+    "acm-pca": "Certificate-Manager",
+    "activate": "Activate",
+    "amplify": "Amplify",
+    "amplifybackend": "Amplify",
+    "amplifyuibuilder": "Amplify",
+    "apigateway": "API-Gateway",
+    "apigatewayv2": "API-Gateway",
+    "appconfig": "Systems-Manager",
+    "appflow": "AppFlow",
+    "application-autoscaling": "Application-Auto-Scaling",
+    "applicationinsights": "CloudWatch",
+    "appmesh": "App-Mesh",
+    "apprunner": "App-Runner",
+    "appstream": "Appstream",
+    "appsync": "AppSync",
+    "aps": "Managed-Service-For-Prometheus",
+    "athena": "Athena",
+    "auditmanager": "Audit-Manager",
+    "autoscaling": "EC2-Auto-Scaling",
+    "aws-marketplace": "Marketplace_Dark",
+    "aws-marketplace-management": "Marketplace_Dark",
+    "backup": "Backup",
+    "backup-gateway": "Backup",
+    "batch": "Batch",
+    "braket": "Braket",
+    "budgets": "Budgets",
+    "ce": "Cost-Explorer",
+    "chime": "Chime",
+    "chatbot": "Chatbot",
+    "cloud9": "Cloud9",
+    "clouddirectory": "Cloud-Directory",
+    "cloudformation": "CloudFormation",
+    "cloudfront": "CloudFront",
+    "cloudhsm": "CloudHSM",
+    "cloudsearch": "CloudSearch",
+    "cloudshell": "CloudShell",
+    "cloudtrail": "CloudTrail",
+    "cloudwatch": "CloudWatch",
+    "codeartifact": "CodeArtifact",
+    "codebuild": "CodeBuild",
+    "codecommit": "CodeCommit",
+    "codedeploy": "CodeDeploy",
+    "codedeploy-commands-secure": "CodeDeploy",
+    "codeguru": "CodeGuru",
+    "codeguru-profiler": "CodeGuru",
+    "codeguru-reviewer": "CodeGuru",
+    "codepipeline": "CodePipeline",
+    "codestar": "CodeStar",
+    "codestar-connections": "CodeStar",
+    "codestar-notifications": "CodeStar",
+    "cognito-identity": "Cognito",
+    "cognito-idp": "Cognito",
+    "cognito-sync": "Cognito",
+    "comprehend": "Comprehend",
+    "comprehendmedical": "Comprehend",
+    "compute-optimizer": "Compute-Optimizer",
+    "config": "Config",
+    "connect": "Connect",
+    "cur": "Cost-and-Usage-Report",
+    "databrew": "Glue-Databrew",
+    "dataexchange": "Data-Exchange",
+    "datapipeline": "Data-Pipeline",
+    "datasync": "DataSync",
+    "dax": "DynamoDB",
+    "deepracer": "DeepRacer",
+    "detective": "Detective",
+    "devicefarm": "Device-Farm",
+    "devops-guru": "DevOps-Guru",
+    "directconnect": "Direct-Connect",
+    "discovery": "Migration-Hub",
+    "dlm": "Backup",
+    "dms": "Database-Migration-Service",
+    "ds": "Directory-Service",
+    "dynamodb": "DynamoDB",
+    "ebs": "Elastic-Block-Store-EBS",
+    "ec2": "EC2",
+    "ec2-instance-connect": "EC2",
+    "ecr": "Elastic-Container-Registry",
+    "ecr-public": "Elastic-Container-Registry",
+    "ecs": "Elastic-Container-Service",
+    "eks": "Elastic-Kubernetes-Service",
+    "elastic-inference": "Elastic-Inference",
+    "elasticache": "ElastiCache",
+    "elasticbeanstalk": "Elastic-Beanstalk",
+    "elasticfilesystem": "EFS",
     "elasticloadbalancing": "Elastic-Load-Balancing",
-    "elasticmapreduce": "Amazon-EMR",
-    "elastictranscoder": "Amazon-Elastic-Transcoder",
-    "email": "Amazon-Simple-Email-Service-SES",
-    "entitlement.marketplace": "AWS-Marketplace",
-    "es": "Amazon-Elasticsearch-Service",
-    "events": "Amazon-EventBridge",
-    "execute-api": "Amazon-API-Gateway",
-    "firehose": "Amazon-Kinesis-Data-Firehose",
-    "fms": "AWS-Firewall-Manager",
-    "forecast": "Amazon-Forecast",
-    "forecastquery": "Amazon-Forecast",
-    "frauddetector": "Machine-Learning",
-    "fsx": "Amazon-FSx",
-    "gamelift": "Amazon-GameLift",
-    "glacier": "Amazon-S3-Glacier",
-    "globalaccelerator": "AWS-Global-Accelerator",
-    "glue": "AWS-Glue",
-    "greengrass": "AWS-IoT-Greengrass",
-    "groundstation": "AWS-Ground-Station",
-    "guardduty": "Amazon-GuardDuty",
-    "health": "AWS-Personal-Health-Dashboard",
-    "iam": "AWS-Identity-and-Access-Management_IAM",
-    "imagebuilder": "Amazon-EC2_AMI",
-    "importexport": "AWS-Snow-Family_Snowball-Import-Export",
-    "inspector": "Amazon-Inspector",
-    "iot": "Internet-of-Things",
-    "iotanalytics": "AWS-IoT-Analytics",
-    "iotevents": "AWS-IoT-Events",
-    "iotthingsgraph": "AWS-IoT-Things-Graph",
-    "kafka": "Amazon-Managed-Streaming-for-Kafka",
-    "kendra": "Machine-Learning",
-    "kinesis": "Amazon-Kinesis",
-    "kinesisanalytics": "Amazon-Kinesis-Data-Analytics",
-    "kinesisvideo": "Amazon-Kinesis-Video-Streams",
-    "kms": "AWS-Key-Management-Service",
-    "lakeformation": "AWS-Lake-Formation",
-    "lambda": "AWS-Lambda",
-    "license-manager": "AWS-License-Manager",
-    "lightsail": "Amazon-Lightsail",
-    "logs": "Amazon-CloudWatch",
+    "elasticloadbalancingv2": "Elastic-Load-Balancing",
+    "elasticmapreduce": "EMR",
+    "elastictranscoder": "Elastic-Transcoder",
+    "elemental-activations": "Elemental-Appliances-&-Software",
+    "elemental-appliances-software": "Elemental-Appliances-&-Software",
+    "es": "OpenSearch-Service",
+    "events": "EventBridge",
+    "evidently": "CloudWatch",
+    "execute-api": "API-Gateway",
+    "finspace": "Finspace",
+    "firehose": "Kinesis-Firehose",
+    "fis": "Fault-Injection-Simulator",
+    "fms": "Firewall-Manager",
+    "forecast": "Forecast",
+    "frauddetector": "Fraud-Detector",
+    "freertos": "FreeRTOS",
+    "fsx": "FSx",
+    "gamelift": "GameLift",
+    "geo": "Location-Service",
+    "glacier": "Simple-Storage-Service-Glacier",
+    "globalaccelerator": "Global-Accelerator",
+    "glue": "Glue",
+    "grafana": "Managed-Service-For-Grafana",
+    "greengrass": "IoT-Greengrass",
+    "greengrassv2": "IoT-Greengrass",
+    "groundstation": "Ground-Station",
+    "guardduty": "GuardDuty",
+    "health": "Personal-Health-Dashboard",
+    "healthlake": "HealthLake",
+    "honeycode": "HoneyCode",
+    "iam": "Identity-and-Access-Management",
+    "imagebuilder": "EC2-Image-Builder",
+    "importexport": "SnowBall",
+    "inspector": "Inspector",
+    "inspector2": "Inspector",
+    "iot": "IoT-Core",
+    "iot1click": "IoT-1-Click",
+    "iotanalytics": "IoT-Analytics",
+    "iotevents": "IoT-Events",
+    "iotfleethub": "IoT-Core",
+    "iotsitewise": "IoT-Sitewise",
+    "iotthingsgraph": "IoT-Things-Graph",
+    "iotwireless": "IoT-Core",
+    "ivs": "Interactive-Video-Service",
+    "kafka": "Managed-Streaming-For-Apache-Kafka",
+    "kafkaconnect": "Managed-Streaming-For-Apache-Kafka",
+    "kendra": "Kendra",
+    "kinesis": "Kinesis",
+    "kinesisanalytics": "Kinesis-Data-Analytics",
+    "kinesisanalyticsv2": "Kinesis-Data-Analytics",
+    "kinesisvideo": "Kinesis-Video-Streams",
+    "kms": "Key-Management-Service",
+    "lakeformation": "Lake-Formation",
+    "lambda": "Lambda",
+    "lex": "Lex",
+    "lexv2": "Lex",
+    "license-manager": "License-Manager",
+    "lightsail": "Lightsail",
+    "logs": "CloudWatch",
+    "lookoutequipment": "Lookout-For-Equipment",
+    "lookoutmetrics": "Lookout-For-Metrics",
+    "lookoutvision": "Lookout-For-Vision",
     "machinelearning": "Machine-Learning",
-    "macie": "Amazon-Macie",
-    "managedblockchain": "Amazon-Managed-Blockchain",
-    "marketplacecommerceanalytics": "AWS-Marketplace",
-    "mediaconnect": "AWS-Elemental-MediaConnect",
-    "mediaconvert": "AWS-Elemental-MediaConvert",
-    "medialive": "AWS-Elemental-MediaLive",
-    "mediapackage": "AWS-Elemental-MediaPackage",
-    "mediapackage-vod": "AWS-Elemental-MediaPackage",
-    "mediastore": "AWS-Elemental-MediaStore",
-    "metering.marketplace": "AWS-Marketplace",
-    "mgh": "AWS-Migration-Hub",
-    "migrationhub-config": "AWS-Migration-Hub",
-    "mobile": "Mobile",
+    "macie": "Macie",
+    "macie2": "Macie",
+    "managedblockchain": "Managed-Blockchain",
+    "marketplacecommerceanalytics": "Marketplace",
+    "mediaconnect": "Elemental-MediaConnect",
+    "mediaconvert": "Elemental-MediaConvert",
+    "medialive": "Elemental-MediaLive",
+    "mediapackage": "Elemental-MediaPackage",
+    "mediapackage-vod": "Elemental-MediaPackage",
+    "mediastore": "Elemental-MediaStore",
+    "mediatailor": "Elemental-MediaTailor",
+    "mgh": "Migration-Hub",
+    "mgn": "Application-Migration-Service",
+    "migrationhub-strategy": "Migration-Hub",
+    "migrationhub-orchestrator": "Migration-Hub",
+    "mobilehub": "Mobile",
     "mobileanalytics": "Mobile",
-    "models.lex": "Amazon-Lex",
-    "monitoring": "Amazon-CloudWatch",
-    "mq": "Amazon-MQ",
-    "mturk-requester": "Users",
-    "networkmanager": "Amazon-VPC_Router",
-    "oidc": "AWS-Single-Sign-On",
-    "opsworks": "AWS-OpsWorks",
-    "opsworks-cm": "AWS-OpsWorks",
-    "organizations": "AWS-Organizations",
-    "outposts": "Corporate-data-center",
-    "participant.connect": "Amazon-Connect",
-    "personalize": "Amazon-Personalize",
-    "personalize-events": "Amazon-Personalize",
-    "personalize-runtime": "Amazon-Personalize",
-    "pi": "Amazon-CloudWatch",
-    "pinpoint": "Amazon-Pinpoint",
-    "polly": "Amazon-Polly",
-    "portal.sso": "AWS-Single-Sign-On",
-    "projects.iot1click": "AWS-IoT-Analytics_Notebook",
-    "qldb": "Amazon-Quantum-Ledger-Database_QLDB",
-    "quicksight": "Amazon-Quicksight",
-    "ram": "AWS-Resource-Access-Manager",
-    "rds": "Amazon-RDS",
-    "rds-data": "Amazon-Aurora",
-    "redshift": "Amazon-Redshift",
-    "rekognition": "Amazon-Rekognition",
-    "resource-groups": "AWS-Resource-Access-Manager",
-    "robomaker": "AWS-RoboMaker",
-    "route53": "Amazon-Route-53",
-    "route53domains": "Amazon-Route-53",
-    "route53resolver": "Amazon-Route-53",
-    "runtime.lex": "Amazon-Lex",
-    "runtime.sagemaker": "Amazon-SageMaker",
-    "s3": "Amazon-Simple-Storage-Service-S3",
-    "s3-control": "Amazon-Simple-Storage-Service-S3",
-    "sagemaker": "Amazon-SageMaker",
-    "savingsplans": "AWS-Budgets",
-    "schemas": "Amazon-EventBridge",
+    "mobiletargeting": "Pinpoint",
+    "monitron": "Monitron",
+    "mq": "MQ",
+    "networkmanager": "Virtual-Private-Cloud",
+    "network-firewall": "Network-Firewall",
+    "nimble": "Nimble-Studio",
+    "oidc": "Single-Sign-On",
+    "opsworks": "OpsWorks",
+    "opsworks-cm": "OpsWorks",
+    "organizations": "Organizations",
+    "outposts": "Outposts-Rack",
+    "panorama": "Panorama",
+    "personalize": "Personalize",
+    "pi": "CloudWatch",
+    "polly": "Polly",
+    "profile": "Connect",
+    "proton": "Proton",
+    "qldb": "Quantum-Ledger-Database",
+    "quicksight": "Quicksight",
+    "ram": "Resource-Access-Manager",
+    "rds": "RDS",
+    "rds-data": "Aurora",
+    "redshift": "Redshift",
+    "redshift-data": "Redshift",
+    "refactor-spaces": "Migration-Hub",
+    "rekognition": "Rekognition",
+    "resource-groups": "Resource-Access-Manager",
+    "resource-explorer": "Resource-Access-Manager",
+    "robomaker": "RoboMaker",
+    "route53": "Route-53",
+    "route53domains": "Route-53",
+    "route53resolver": "Route-53",
+    "rum": "CloudWatch",
+    "s3": "Simple-Storage-Service",
+    "s3-outposts": "S3-On-Outposts",
+    "sagemaker": "SageMaker",
+    "savingsplans": "Savings-Plans",
+    "schemas": "EventBridge",
     "sdb": "Database",
-    "secretsmanager": "AWS-Secrets-Manager",
-    "securityhub": "AWS-Security-Hub",
-    "serverlessrepo": "AWS-Serverless-Application-Repository",
-    "servicecatalog": "AWS-Service-Catalog",
-    "servicediscovery": "Amazon-Route-53",
-    "servicequotas": "AWS-Trusted-Advisor",
-    "session.qldb": "Amazon-Quantum-Ledger-Database_QLDB",
-    "shield": "AWS-Shield_Shield-Advanced",
-    "signer": "AWS-Identity-and-Access-Management-IAM_Data-Encryption-Key",
-    "sms": "Amazon-Pinpoint",
-    "sms-voice.pinpoint": "Amazon-Pinpoint",
-    "snowball": "AWS-Snowball",
-    "sns": "Amazon-Simple-Notification-Service-SNS",
-    "sqs": "Amazon-Simple-Queue-Service-SQS",
-    "ssm": "AWS-Systems-Manager",
-    "states": "AWS-Step-Functions",
-    "storagegateway": "AWS-Storage-Gateway",
-    "streams.dynamodb": "Amazon-DynamoDB",
-    "sts": "AWS-Identity-and-Access-Management-IAM_AWS-STS",
-    "support": "AWS-Trusted-Advisor",
-    "swf": "AWS-Step-Functions",
-    # foobar
-    "tagging": "Application-Integration_Event_Resource",
-    "textract": "Amazon-Textract",
-    "transcribe": "Amazon-Transcribe",
-    "transfer": "AWS-Transfer-for-SFTP",
-    "translate": "Amazon-Translate",
-    "waf": "AWS-WAF",
-    "waf-regional": "AWS-WAF",
-    "wafv2": "AWS-WAF",
-    "workdocs": "Amazon-WorkDocs",
-    "worklink": "Amazon-WorkLink",
-    "workmail": "Amazon-WorkMail",
-    "workmailmessageflow": "Amazon-WorkMail",
-    "workspaces": "Amazon-Workspaces",
-    "xray": "AWS-X-Ray",
+    "secretsmanager": "Secrets-Manager",
+    "securityhub": "Security-Hub",
+    "serverlessrepo": "Serverless-Application-Repository",
+    "servicecatalog": "Service-Catalog",
+    "servicediscovery": "Route-53",
+    "servicequotas": "Trusted-Advisor",
+    "ses": "Simple-Email-Service",
+    "sesv2": "Simple-Email-Service",
+    "shield": "Shield",
+    "signer": "Signer",
+    "sms": "Pinpoint",
+    "sms-voice": "Pinpoint",
+    "sms-voicev2": "Pinpoint",
+    "snowball": "Snowball",
+    "sns": "Simple-Notification-Service",
+    "sqs": "Simple-Queue-Service",
+    "ssm": "Systems-Manager",
+    "ssm-incidents": "Systems-Manager",
+    "ssm-contacts": "Systems-Manager",
+    "ssm-guiconnect": "Systems-Manager",
+    "sso": "Single-Sign-On",
+    "states": "Step-Functions",
+    "storagegateway": "Storage-Gateway",
+    "sts": "Identity-and-Access-Management",
+    "support": "Support",
+    "swf": "Step-Functions",
+    "textract": "Textract",
+    "timestream": "Timestream",
+    "transcribe": "Transcribe",
+    "transfer": "Transfer-Family",
+    "translate": "Translate",
+    "trustedadvisor": "Trusted-Advisor",
+    "waf": "WAF",
+    "waf-regional": "WAF",
+    "wafv2": "WAF",
+    "wellarchitected": "Well-Itected-Tool",
+    "workdocs": "WorkDocs",
+    "worklink": "WorkLink",
+    "workmail": "WorkMail",
+    "workmailmessageflow": "WorkMail",
+    "workspaces": "Workspaces",
+    "workspaces-web": "Workspaces",
+    "xray": "X-Ray",
 }
+
+ICON_TYPES = {"resource": "Resource", "category": "Category", "main": "Architecture"}
+
+ICON_SIZES = ["16", "32", "48", "64", "256", "320"]
+
+CSS_BUILD = """
+{% for name, value in icons.items() %}
+.{{ name }} {
+    background-image: url('{{ value.path }}');
+    min-width: {{ value.size }}px;
+    min-height: {% if value.path.endswith('.svg') %}100%;
+    {% else %}{{ value.size }}px;
+    {% endif %}
+}
+{% endfor %}
+"""
+
+
+class IconBuilder:
+    def __init__(self, url):
+        self.assets_dir = os.path.join(
+            os.path.abspath(os.path.dirname(os.path.dirname(__file__))), "assets"
+        )
+        if not os.path.exists(self.assets_dir):
+            raise DirectoryNotFoundError(f"Directory not found: {self.assets_dir}")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            icons_dir = self.download_icons(url, temp_dir)
+            self.icons = self.get_icons(icons_dir)
+            self.collect_icons()
+
+        self.build_css()
+
+    def download_icons(self, url, target_dir) -> str:
+        """Download and extract zip file from the given URL."""
+        zip_path = os.path.join(target_dir, "icons.zip")
+        icons_dirpath = os.path.join(target_dir, "icons")
+
+        # Download the file from the URL
+        logger.info("Downloading icons from: %s", url)
+        urllib.request.urlretrieve(url, zip_path)
+
+        # Extract the zip file
+        logger.info("Extracting icons to: %s", icons_dirpath)
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
+            zip_ref.extractall(icons_dirpath)
+
+        return icons_dirpath
+
+    def get_icons(self, icons_dir):
+        icons = dict()
+        if not os.path.isdir(icons_dir):
+            raise DirectoryNotFoundError("Folder does not exist: %s", icons_dir)
+
+        logger.info("Processing icons from directory: %s", icons_dir)
+        for root, _, files in os.walk(icons_dir):
+            if not any([x.endswith(".png") for x in files]):
+                continue
+            for itype, name in ICON_TYPES.items():
+                if not any([x.startswith(name) for x in root.split("/")]):
+                    continue
+                for name in files:
+                    if not name.endswith(".png"):
+                        continue
+                    new_name = (
+                        name.replace(" ", "")
+                        .replace("Arch_Amazon", str())
+                        .replace("Arch_AWS", str())
+                        .replace("Res_Amazon", str())
+                        .replace("Res_AWS", str())
+                        .replace("Arch", str())
+                        .replace("Res_", str())
+                        .lstrip("_")
+                        .lstrip("-")
+                        .lower()
+                    )
+                    if new_name.startswith("amazon"):
+                        new_name = new_name.replace("amazon", str())
+
+                    path = os.path.join(itype, new_name)
+                    if path in icons.values():
+                        base = os.path.basename(path)
+                        dirname = os.path.dirname(path)
+                        path = os.path.join(dirname, f"_{base}")
+                    icons[os.path.join(root, name)] = path
+        return icons
+
+    def collect_icons(self):
+        prefix_dir = os.path.join(self.assets_dir, "icons")
+        logger.info("Collecting icons to directory: %s", prefix_dir)
+        for src, dest in self.icons.items():
+            path = os.path.join(prefix_dir, dest)
+            dirname = os.path.dirname(path)
+            if not os.path.isdir(dirname):
+                os.makedirs(dirname)
+            copy(src, path)
+
+    def build_css(self):
+        css_path = os.path.join(self.assets_dir, "css", "icons.css")
+        dirname = os.path.dirname(css_path)
+        if not os.path.isdir(dirname):
+            os.makedirs(dirname)
+
+        logger.info("Preparing and writing CSS to file: %s", css_path)
+        icons = dict()
+        for size in ICON_SIZES:
+            for key, value in ICON_SERVICE_MAP.items():
+                icon_dir = os.path.join(self.assets_dir, "icons")
+                names = [
+                    f"{value.lower()}.svg",
+                    f"{value.lower()}.png",
+                    value.lower()
+                    + "_"
+                    + ("64@5x" if size == "320" else "64@4x" if size == "256" else size)
+                    + ".png",
+                ]
+                for icon_name in names:
+                    if os.path.isfile(os.path.join(icon_dir, icon_name)):
+                        icons[f"{key}-{size}"] = {
+                            "size": size,
+                            "path": os.path.join("/assets", "icons", icon_name),
+                        }
+                    elif os.path.isfile(os.path.join(icon_dir, "main", icon_name)):
+                        icons[f"{key}-{size}"] = {
+                            "size": size,
+                            "path": os.path.join("/assets", "icons", "main", icon_name),
+                        }
+
+        with open(css_path, "w") as f:
+            f.write(Template(CSS_BUILD, lstrip_blocks=True, trim_blocks=True).render(icons=icons))

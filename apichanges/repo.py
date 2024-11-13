@@ -3,9 +3,10 @@ import json
 import logging
 import os
 import re
+import weakref
 from datetime import datetime, timedelta
 from distutils.version import LooseVersion
-from functools import lru_cache
+from functools import lru_cache, wraps
 
 import pygit2
 from dateutil.parser import parse as parse_date
@@ -34,6 +35,21 @@ def commit_dict(commit, committed_date=None):
     )
 
 
+def weak_lru(maxsize=128, typed=False):
+    def wrapper(func):
+        @lru_cache(maxsize, typed)
+        def _func(_self, *args, **kwargs):
+            return func(_self(), *args, **kwargs)
+
+        @wraps(func)
+        def inner(self, *args, **kwargs):
+            return _func(weakref.ref(self), *args, **kwargs)
+
+        return inner
+
+    return wrapper
+
+
 class CommitProcessor(object):
     def __init__(
         self,
@@ -55,9 +71,7 @@ class CommitProcessor(object):
         change_log = {}
         data = json.loads(self.repo[fid].read_raw().decode("utf8"))
         for n in data:
-            change_log.setdefault(n["category"].strip("`").lower(), []).append(
-                n["description"]
-            )
+            change_log.setdefault(n["category"].strip("`").lower(), []).append(n["description"])
         return change_log
 
     def process(self, commit, change_diff):
@@ -67,9 +81,7 @@ class CommitProcessor(object):
                     "commit:{commit_id:.8} tag:{tag} date:{created_at:%Y/%m/%d %H:%M}\n"
                     " stats: {stats}"
                 ).format(
-                    stats=change_diff.stats.format(
-                        pygit2.GIT_DIFF_STATS_SHORT, 80
-                    ).strip(),
+                    stats=change_diff.stats.format(pygit2.GIT_DIFF_STATS_SHORT, 80).strip(),
                     **commit,
                 )
             )
@@ -77,9 +89,7 @@ class CommitProcessor(object):
 
         change_path = change_log = None
         if self.change_dir:
-            change_path = os.path.join(
-                self.change_dir, "%s.json" % commit["tag"].lstrip("v")
-            )
+            change_path = os.path.join(self.change_dir, "%s.json" % commit["tag"].lstrip("v"))
 
         # Get file map so we can ensure change log first.
         file_map = {d.new_file.path: d for d in change_diff.deltas}
@@ -99,9 +109,7 @@ class CommitProcessor(object):
                 if not found:
                     continue
             if self.debug:
-                log.debug(
-                    "api model change {} change: {}".format(dpath, d.status_char())
-                )
+                log.debug("api model change {} change: {}".format(dpath, d.status_char()))
             if d.status_char() == "A":
                 new = json.loads(self.repo[d.new_file.id].read_raw().decode("utf8"))
                 old = None
@@ -176,10 +184,11 @@ class TagWalker(object):
             try:
                 self.repo.lookup_reference("refs/tags/%s" % target)
             except (KeyError, pygit2.InvalidSpecError):
+                print("t:", target)
                 target = parse_date(target).astimezone(tzutc())
         return target
 
-    @lru_cache(128)
+    @weak_lru(128)
     def get(self, tag):
         tags = self.get_tag_set()
         idx = bisect.bisect_left(LooseVersion(tag), tags)
@@ -222,7 +231,7 @@ class TagWalker(object):
                 if t_date > target:
                     return prev or t
 
-    @lru_cache(5)
+    @weak_lru(5)
     def get_tag_set(self):
         regex = re.compile("^refs/tags")
         tags = list(

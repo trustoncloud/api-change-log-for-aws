@@ -36,7 +36,7 @@ class SitePublisher(object):
             self.transfer_staging(client, staging)
 
     def transfer_staging(self, client, staging):
-        for dirpath, dirnames, files in os.walk(staging):
+        for dirpath, _dirnames, files in os.walk(staging):
             dirpath = Path(dirpath)
             for f in files:
                 sf = dirpath / f
@@ -50,14 +50,12 @@ class SitePublisher(object):
                 params["ContentType"], _ = mimetypes.guess_type(f)
                 key = str(self.prefix / tf).lstrip("/")
                 log.info("upload %s", key)
-                client.upload_file(
-                    str(sf), Bucket=self.bucket, Key=key, ExtraArgs=params
-                )
+                client.upload_file(str(sf), Bucket=self.bucket, Key=key, ExtraArgs=params)
 
     def prepare_staging(self, staging):
         tf_count = 0
         tf_size = 0
-        for dirpath, dirnames, files in os.walk(self.site_dir):
+        for dirpath, _dirnames, files in os.walk(self.site_dir):
             dirpath = Path(dirpath)
             stage_dir = staging / dirpath.relative_to(self.site_dir)
             for f in files:

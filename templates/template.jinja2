@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+  {% from "macros.jinja2" import render_service_change %}
+  <head>
+    <meta charset="utf-8">
+    <meta name="description" content="Changelog of AWS APIs.">
+    <meta name="keywords" content="AWS, API, Changes, Changelog, AWS API">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon"
+          href="/assets/icons/favicon.ico"
+          sizes="16 x 16"
+          type="image/png">
+    {% block title %}
+      <title>AWS API Changes</title>
+    {% endblock title %}
+    <!-- Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-2578679-3"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'UA-2578679-3');
+    </script>
+    <link rel="stylesheet" href="/assets/css/bulma.min.css" />
+    <link rel="stylesheet" href="/assets/css/docutils.css" />
+    <link rel="stylesheet" href="/assets/sprite/images.css" />
+    <link rel="stylesheet" href="/assets/css/icons.css" />
+    <link rel="stylesheet" href="/assets/css/site.css" />
+    <link rel="alternate"
+          type="application/rss+xml"
+          title="AWS API Changes"
+          href="/feed/feed.rss" />
+    {% block page_head %}
+    {% endblock page_head %}
+  </head>
+  <body>
+    {% block topmast %}
+      <section class="section">
+        <div class="container has-text-centered">
+          <h1 class="title">
+            <span class="is-inline-block {{ api.get_icon_style('aws', 48) }}"></span>
+            <p>Change log of AWS APIs</p>
+            <a href="/feed/feed.rss" title="RSS feed" target="_blank">
+              <span class="is-inline-block {{ api.get_icon_style('rss-feed', 16) }}"></span>
+            </a>
+          </h1>
+          <div>
+            Powered by
+            <a href="https://trustoncloud.com" target="_blank">
+              <span class="is-inline-block {{ api.get_icon_style('toc-cloud', 16) }}"></span>TrustOnCloud
+            </a>
+          </div>
+          <div class="references">
+            <a href="https://awsiamchanges.com" target="_blank">
+              <div>
+                <span>Change log of AWS IAM</span>
+                <br>
+                <span>https://awsiamchanges.com 🡥</span>
+              </div>
+            </a>
+            <div class="divider"></div>
+            <a href="https://gcpapichanges.com" target="_blank">
+              <div>
+                <span>Change log of GCP APIs</span>
+                <br>
+                <span>https://gcpapichanges.com 🡥</span>
+              </div>
+            </a>
+            <div class="divider"></div>
+            <a href="https://azureiamchanges.com" target="_blank">
+              <div>
+                <span>Change log of Azure IAM</span>
+                <br>
+                <span>https://azureiamchanges.com 🡥</span>
+              </div>
+            </a>
+          </div>
+          <span class="feedback">
+            Any feedback or ideas, reach out to <a href="mailto:dev@trustoncloud.com">dev@trustoncloud.com</a>
+          </span>
+        </div>
+      </section>
+    {% endblock topmast %}
+    {% block navigation %}
+    {% endblock navigation %}
+    {% block content %}
+      <section class="section">
+        <div class="tile is-ancestor">
+          <div class="tile is-12 is-vertical is-parent">
+            {% for release in releases %}
+              <div class="tile is-child box">
+                <p class="title is-4">
+                  <a href="/archive/changes/{{ release.id[:6] }}.html">{{ release.created.strftime("%Y/%m/%d %H:%M") }}</a> ({{ release.size }} changes)
+                </p>
+                {% for svc_change in release %}{{ render_service_change(api, svc_change) }}{% endfor %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+    {% endblock content %}
+    <footer class="footer">
+      <div class="content has-text-centered">
+        <p class="disclaimer">
+          All trademarks not owned by TrustOnCloud that appear on this site are the property of their respective owners, and
+          <br />
+          do not imply any affiliation with or endorsement by them. All specifications are subject to change without notice.
+        </p>
+        <p>
+          Inspired by <a href="https://awsapichanges.info" target="_blank">awsapichanges.info</a>
+        </p>
+        <p>
+          {% block footer_timestamp %}
+            Last updated on <strong>{{ api.build_time.strftime("%Y-%m-%d %H:%M") }} UTC</strong>
+          {% endblock footer_timestamp %}
+          <br />
+          {% block footer %}
+          {% endblock footer %}
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

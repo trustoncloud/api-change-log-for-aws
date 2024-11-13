@@ -1,3 +1,4 @@
+name: ECR
 on:
   push:
     branches:
@@ -19,7 +20,7 @@ permissions:
 
 jobs:
   build-and-push:
-    name: Build and Push Image to ECR
+    name: Build & Push
     runs-on: ubuntu-latest
     env:
       ECR_REPOSITORY: apichanges

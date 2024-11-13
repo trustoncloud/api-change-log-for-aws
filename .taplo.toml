@@ -1,0 +1,12 @@
+# might get the support for specifying config in pyproject.toml
+# https://github.com/tamasfe/taplo/issues/603
+
+include = [".taplo.toml", "pyproject.toml"]
+
+[formatting]
+  align_entries    = true
+  align_comments   = true
+  reorder_arrays   = true
+  indent_tables    = true
+  indent_entries   = true
+  trailing_newline = true
