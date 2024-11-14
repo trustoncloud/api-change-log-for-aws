@@ -23,7 +23,7 @@ sdk-repo: cache-get
             'clone',
             '--branch=master',
             '--shallow-since=%s' % last.isoformat(),
-            '{{sdk_git_repo}}',
+            '{{ sdk_git_repo }}',
             str(repo_dir)
         ]
     except (FileNotFoundError, IndexError):
@@ -40,7 +40,7 @@ build: sdk-repo icons
     logging.basicConfig(level=logging.INFO)
     builder_dir = Path('.').resolve()
     work_dir = Path('{{ work_dir }}').resolve()
-    site = Site(
+    Site(
         work_dir / 'sdk_repo',
         work_dir / 'cache.json',
         builder_dir / 'templates',
@@ -50,14 +50,9 @@ build: sdk-repo icons
 
 # Publish the website
 publish: build
-    #!/usr/bin/env python3
-    import logging
-    from pathlib import Path
-    from apichanges.publisher import SitePublisher
-    logging.basicConfig(level=logging.INFO)
-    stage_dir = Path('{{ work_dir }}').resolve() / 'stage'
-    publisher = SitePublisher(stage_dir, '{{ website_bucket }}')
-    publisher.publish()
+    #!/bin/sh
+    cd {{ work_dir }}
+    aws s3 sync stage/ s3://{{ website_bucket }}
 
 
 # Get the commit cache file
