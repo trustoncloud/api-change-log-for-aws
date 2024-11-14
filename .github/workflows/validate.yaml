@@ -35,7 +35,7 @@ jobs:
       - name: Lint TOML with `taplo`
         run: poetry run taplo validate --default-schema-catalogs
       - name: Lint Jinja with `djlint`
-        run: poetry run djlint **/templates/**
+        run: poetry run djlint templates/**
 
       # formatting
       - name: Check Code Formatting with `ruff`
@@ -43,4 +43,4 @@ jobs:
       - name: Check TOML Formatting with `taplo`
         run: poetry run taplo fmt --check --diff
       - name: Check Jinja Formatting with `djlint`
-        run: poetry run djlint **/templates/** --check
+        run: poetry run djlint templates/** --check
