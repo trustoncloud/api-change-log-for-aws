@@ -1,0 +1,62 @@
+name: Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  pull-requests: read
+  contents: read
+  checks: read
+
+jobs:
+  required-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber
+            });
+
+            const commitSha = pr.head.sha;
+            const currentJobName = context.job;
+            let allChecksCompleted = false;
+            let allChecksSuccessful = true;
+
+            await new Promise(resolve => setTimeout(resolve, 10000)); // Initial wait for 10 seconds
+
+            while (true) {
+              const { data: checkRuns } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: commitSha
+              });
+
+              const relevantCheckRuns = checkRuns.check_runs.filter(run => run.name !== currentJobName);
+              if (relevantCheckRuns.length === 0) {
+                console.log('No check runs found. Passing the required check.');
+                break;
+              }
+
+              allChecksCompleted = relevantCheckRuns.every(run => run.status === 'completed');
+              allChecksSuccessful = relevantCheckRuns.every(run => run.conclusion === 'success');
+
+              if (!allChecksCompleted) {
+                console.log('Some jobs are still pending. Waiting...');
+                await new Promise(resolve => setTimeout(resolve, 30000)); // Wait for 30 seconds
+              } else {
+                break;
+              }
+            }
+
+            if (!allChecksSuccessful) {
+              core.setFailed('One or more jobs failed.');
+            } else {
+              console.log('All jobs succeeded.');
+            }

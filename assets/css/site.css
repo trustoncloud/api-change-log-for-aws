@@ -11,6 +11,10 @@ body > section.section .feedback {
   font-size: 13px;
 }
 
+.br-5 {
+  border-radius: 5px;
+}
+
 .breadcrumb.is-left {
   padding-left: 3em;
 }
@@ -19,6 +23,13 @@ body > section.section .feedback {
 }
 .columns > .column:last-of-type {
   padding-left: 0px;
+}
+
+section.is-service .columns > .column:first-of-type {
+  padding: 0.25rem 0.75rem;
+}
+section.is-service .columns > .column:last-of-type {
+  padding-top: 1rem;
 }
 
 .title .icon.aws-48 {
@@ -73,6 +84,18 @@ body > section.section .feedback {
 .references div:hover {
   background-color: #eeeeee88;
   border-radius: 3px;
+}
+
+.container > .title {
+  margin-bottom: 0px;
+}
+
+.is-child .icon {
+  border-radius: 15px;
+}
+
+p.service-change {
+  margin-bottom: 0px;
 }
 
 details {

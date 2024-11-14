@@ -20,6 +20,7 @@
         -
       {% endif %}
       {% if svc_change.count_new %}{{ svc_change.count_new }} new{% endif %}
+      {% if svc_change.count_new and svc_change.count_updated %}&nbsp;{% endif %}
       {% if svc_change.count_updated %}{{ svc_change.count_updated }} updated{% endif %}
     api methods</a>
   </p>
