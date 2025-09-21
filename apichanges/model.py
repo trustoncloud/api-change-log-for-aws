@@ -35,16 +35,16 @@ class ShapeVisitor(object):
             return self.DEFAULT_VALUE
         self.seen.add(stype)
         try:
-            if skind is Shape:
-                return self.visit_shape(shape, *params)
-            elif skind is StructureShape:
+            if isinstance(shape, StructureShape):
                 return self.visit_structure(shape, *params)
-            elif skind is ListShape:
+            elif isinstance(shape, ListShape):
                 return self.visit_list(shape, *params)
-            elif skind is MapShape:
+            elif isinstance(shape, MapShape):
                 return self.visit_map(shape, *params)
-            elif skind is StringShape:
+            elif isinstance(shape, StringShape):
                 return self.visit_string(shape, *params)
+            else:
+                return self.visit_shape(shape, *params)
         finally:
             self.seen.remove(stype)
 
@@ -53,11 +53,9 @@ class EqualityVisitor(ShapeVisitor):
     DEFAULT_VALUE = True
 
     def visit_structure(self, shape, other):
-        # type change to struct
-        if type(shape) is not type(other):
-            return True
-        added = set(shape.members).difference(other.members)
-        if added:
+        if not isinstance(other, StructureShape):
+            return False
+        if set(shape.members) != set(other.members):
             return False
         for m in shape.members:
             if not self.process(shape.members[m], other.members[m]):
@@ -65,22 +63,22 @@ class EqualityVisitor(ShapeVisitor):
         return True
 
     def visit_list(self, shape, other):
-        try:
-            return self.process(shape.member, other.member)
-        except AttributeError:
-            return []
+        if not isinstance(other, ListShape):
+            return False
+        return self.process(shape.member, other.member)
 
     def visit_string(self, shape, other):
-        return shape.enum == other.enum
+        if not isinstance(other, StringShape):
+            return False
+        return getattr(shape, "enum", None) == getattr(other, "enum", None)
 
     def visit_shape(self, shape, other):
         return repr(shape) == repr(other)
 
     def visit_map(self, shape, other):
-        try:
-            return self.process(shape.key, other.key) and self.process(shape.value, other.value)
-        except AttributeError:
-            return {}
+        if not isinstance(other, MapShape):
+            return False
+        return self.process(shape.key, other.key) and self.process(shape.value, other.value)
 
 
 class ReferenceVisitor(ShapeVisitor):
@@ -143,18 +141,18 @@ class DeltaVisitor(ShapeVisitor):
             return {}
 
     def visit_list(self, new, other):
-        try:
-            return self.process(new.member, other.member)
-        except AttributeError:
-            return []
+        if not isinstance(other, ListShape):
+            return TypeRepr().process(new)
+        return self.process(new.member, other.member)
 
     def visit_map(self, new, other):
-        try:
-            return self.process(new.value, other.value)
-        except AttributeError:
-            return {}
+        if not isinstance(other, MapShape):
+            return TypeRepr().process(new)
+        return self.process(new.value, other.value)
 
     def visit_string(self, new, other):
+        if not isinstance(other, StringShape):
+            return TypeRepr().process(new)
         if hasattr(new, "enum") and hasattr(other, "enum"):
             return set(new.enum).difference(other.enum)
         return set()
@@ -192,6 +190,30 @@ class StringShape(ComparableShape, model.StringShape):
     pass
 
 
+class BooleanShape(ComparableShape, model.BooleanShape):
+    pass
+
+
+class BlobShape(ComparableShape, model.BlobShape):
+    pass
+
+
+class IntegerShape(ComparableShape, model.IntegerShape):
+    pass
+
+
+class FloatShape(ComparableShape, model.FloatShape):
+    pass
+
+
+class DoubleShape(ComparableShape, model.DoubleShape):
+    pass
+
+
+class TimestampShape(ComparableShape, model.TimestampShape):
+    pass
+
+
 class Shape(ComparableShape, model.Shape):
     pass
 
@@ -203,6 +225,13 @@ class ShapeResolver(model.ShapeResolver):
         "list": ListShape,
         "map": MapShape,
         "string": StringShape,
+        "boolean": BooleanShape,
+        "blob": BlobShape,
+        "integer": IntegerShape,
+        "long": IntegerShape,
+        "float": FloatShape,
+        "double": DoubleShape,
+        "timestamp": TimestampShape,
     }
 
     DEFAULT_SHAPE = Shape
