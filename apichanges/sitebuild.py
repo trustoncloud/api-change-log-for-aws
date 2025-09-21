@@ -184,6 +184,15 @@ class Site:
     site_prefix = ""
     site_url = "https://awsapichanges.com"
     default_commit_days = 14
+    history_days = int(os.environ.get("APICHANGES_HISTORY_DAYS", "730"))
+    service_page_history_days = int(os.environ.get("APICHANGES_SERVICE_PAGE_DAYS", "730"))
+    search_index_days = int(os.environ.get("APICHANGES_SEARCH_DAYS", "730"))
+
+    def _trim_commits(self, commits, days):
+        marker_date = datetime.now().astimezone(tzutc()).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ) - timedelta(days=days)
+        return [c for c in commits if c.created >= marker_date]
 
     def __init__(self, repo_path, cache_path, template_dir, assets_dir, output_dir):
         self.repo_path = repo_path
@@ -216,8 +225,11 @@ class Site:
         else:
             log.info("incremental build %d commits", len(new_commits))
             self.build_commit_pages(new_commits)
-            self.build_service_pages(self.commits, set(group_by_service(new_commits)))
-            self.build_search_index(self.commits[: bisect_create_age(self.commits, days=365 + 60)])
+            self.build_service_pages(
+                self._trim_commits(self.commits, self.service_page_history_days),
+                set(group_by_service(new_commits)),
+            )
+            self.build_search_index(self._trim_commits(self.commits, self.search_index_days))
         self.copy_assets()
         pages = list(self.pages)
         self.pages = []
@@ -395,15 +407,15 @@ class Site:
             with open(cache_path) as fh:
                 commits = Commit.schema().loads(fh.read(), many=True)
         commits.sort(key=operator.attrgetter("created"), reverse=True)
-        self.commits = commits
+        self.commits = self._trim_commits(commits, self.history_days)
         if not commits:
-            new_commits = self._load(repo_path, since=since)
-            if since is None:  # last commit is typically an import
-                new_commits.pop(-1)
+            since_date = (datetime.now(tzutc()) - timedelta(days=self.history_days)).isoformat()
+            new_commits = self._load(repo_path, since=since_date)
         else:
             new_commits = self._load(repo_path, since=commits[0].tag)
         self.commits.extend(new_commits)
         self.commits.sort(key=operator.attrgetter("created"), reverse=True)
+        self.commits = self._trim_commits(self.commits, self.history_days)
         with open(cache_path, "w") as fh:
             fh.write(Commit.schema().dumps(self.commits, many=True))
         return new_commits
