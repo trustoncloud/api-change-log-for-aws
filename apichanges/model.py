@@ -115,8 +115,9 @@ class TypeRepr(ShapeVisitor):
         return {self.process(shape.key): self.process(shape.value)}
 
     def visit_string(self, shape):
-        if shape.enum:
-            return " | ".join(shape.enum)
+        enum = getattr(shape, "enum", None)
+        if enum:
+            return " | ".join(enum)
         return "string"
 
     def visit_shape(self, shape):
@@ -190,27 +191,27 @@ class StringShape(ComparableShape, model.StringShape):
     pass
 
 
-class BooleanShape(ComparableShape, model.BooleanShape):
+class BooleanShape(ComparableShape, model.Shape):
     pass
 
 
-class BlobShape(ComparableShape, model.BlobShape):
+class BlobShape(ComparableShape, model.Shape):
     pass
 
 
-class IntegerShape(ComparableShape, model.IntegerShape):
+class IntegerShape(ComparableShape, model.Shape):
     pass
 
 
-class FloatShape(ComparableShape, model.FloatShape):
+class FloatShape(ComparableShape, model.Shape):
     pass
 
 
-class DoubleShape(ComparableShape, model.DoubleShape):
+class DoubleShape(ComparableShape, model.Shape):
     pass
 
 
-class TimestampShape(ComparableShape, model.TimestampShape):
+class TimestampShape(ComparableShape, model.Shape):
     pass
 
 
